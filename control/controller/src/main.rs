@@ -24,7 +24,7 @@ fn start_controller_thread(bus: tokio::sync::broadcast::Sender<BusMessage>) {
             println!(
                 "{}({:?}) is {:?}",
                 gamepad.name(),
-                gamepad.os_name(),
+                gamepad.uuid(),
                 gamepad.power_info()
             );
         }
