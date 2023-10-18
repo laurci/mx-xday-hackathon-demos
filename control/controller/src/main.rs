@@ -20,8 +20,13 @@ fn start_controller_thread(bus: tokio::sync::broadcast::Sender<BusMessage>) {
     thread::spawn(move || {
         let mut gilrs = Gilrs::new().unwrap();
 
-        for (id, gamepad) in gilrs.gamepads() {
-            println!("{}({}) is {:?}", gamepad.name(), id, gamepad.power_info());
+        for (_id, gamepad) in gilrs.gamepads() {
+            println!(
+                "{}({:?}) is {:?}",
+                gamepad.name(),
+                gamepad.uuid(),
+                gamepad.power_info()
+            );
         }
 
         loop {
