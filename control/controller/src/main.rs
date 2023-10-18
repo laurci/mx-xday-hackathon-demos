@@ -18,10 +18,40 @@ enum BusMessage {
 
 fn start_controller_thread(bus: tokio::sync::broadcast::Sender<BusMessage>) {
     thread::spawn(move || {
-        let gilrs = Gilrs::new().unwrap();
+        let mut gilrs = Gilrs::new().unwrap();
 
-        for (_id, gamepad) in gilrs.gamepads() {
-            println!("{} is {:?}", gamepad.name(), gamepad.power_info());
+        for (id, gamepad) in gilrs.gamepads() {
+            println!("{}({}) is {:?}", gamepad.name(), id, gamepad.power_info());
+        }
+
+        loop {
+            while let Some(event) = gilrs.next_event() {
+                println!("{:?}", event);
+                match event {
+                    gilrs::Event {
+                        id,
+                        event: gilrs::EventType::ButtonPressed(button, _),
+                        time: _,
+                    } => {
+                        println!("[{}] button pressed {:?}", id, button)
+                    }
+                    gilrs::Event {
+                        id,
+                        event: gilrs::EventType::ButtonReleased(button, _),
+                        time: _,
+                    } => {
+                        println!("[{}] button released {:?}", id, button)
+                    }
+                    gilrs::Event {
+                        id,
+                        event: gilrs::EventType::AxisChanged(axis, value, _),
+                        time: _,
+                    } => {
+                        println!("[{}] axis {:?} changed to {}", id, axis, value)
+                    }
+                    _ => {}
+                }
+            }
         }
     });
 }
