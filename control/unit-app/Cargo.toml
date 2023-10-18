@@ -1,0 +1,7 @@
+[package]
+name = "unit-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+unit = { git = "https://github.com/laurci/unit.git" }
