@@ -6,3 +6,8 @@ members = [
     "controller",
     "notifier-bridge",
 ]
+
+
+exclude = [
+    "robot-sc"
+]
