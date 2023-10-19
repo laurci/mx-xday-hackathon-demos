@@ -9,5 +9,7 @@ dotenv = "0.15.0"
 futures-util = "0.3.28"
 gilrs = "0.10.2"
 tokio = { version = "1.33.0", features = ["full"] }
-tokio-tungstenite = "0.20.1"
+tokio-serial = "5.4.4"
+tokio-tungstenite = { version = "0.20.1", features = ["native-tls"] }
+tokio-util = {version = "0.7.9", features = ["codec"]}
 url = "2.4.1"

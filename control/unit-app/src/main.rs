@@ -1,7 +1,7 @@
 use unit::log;
 
 unit::application! {
-    name = "robowars",
+    name = "robotwars",
 }
 
 #[unit::init]
