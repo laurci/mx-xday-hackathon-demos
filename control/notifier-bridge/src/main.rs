@@ -23,12 +23,18 @@ impl AsyncConsumer for Consumer {
     ) {
         let content = String::from_utf8(content).unwrap();
 
-        if content.contains(ROBOT1_ADDRESS) {
-            println!("robot 1 transaction found: {:?}", content);
+        if let Some(start_idx) = content.find(ROBOT1_ADDRESS) {
+            let after_bracket_idx = start_idx + content[start_idx..].find('}').unwrap();
+            let before_bracket_idx = start_idx - "{\"address\":\"".len();
+            let json = &content[before_bracket_idx..after_bracket_idx + 1];
+            println!("robot 1 transaction found: {:?}", json);
         }
 
-        if content.contains(ROBOT2_ADDRESS) {
-            println!("robot 2 transaction found: {:?}", content);
+        if let Some(start_idx) = content.find(ROBOT2_ADDRESS) {
+            let after_bracket_idx = start_idx + content[start_idx..].find('}').unwrap();
+            let before_bracket_idx = start_idx - "{\"address\":\"".len();
+            let json = &content[before_bracket_idx..after_bracket_idx + 1];
+            println!("robot 2 transaction found: {:?}", json);
         }
 
         let args = BasicAckArguments::new(deliver.delivery_tag(), false);
