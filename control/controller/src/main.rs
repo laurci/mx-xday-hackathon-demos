@@ -1,7 +1,12 @@
 use anyhow::Result;
 use futures_util::{future, SinkExt, StreamExt};
 use gilrs::Gilrs;
-use std::{env, io, str, thread};
+use std::{
+    env, io, str,
+    sync::{Arc, Mutex},
+    thread,
+    time::{Duration, Instant},
+};
 use tokio::io::AsyncWriteExt;
 use tokio_serial::SerialPortBuilderExt;
 use tokio_tungstenite::connect_async;
@@ -9,6 +14,8 @@ use tokio_util::{
     bytes::BytesMut,
     codec::{Decoder, Encoder},
 };
+
+use tokio::{task, time};
 use url::Url;
 
 fn get_ws_url() -> Url {
@@ -178,20 +185,50 @@ async fn main() -> Result<()> {
         }
     });
 
+    let current_value_mutex = Arc::new(Mutex::new("p 0 0 0 0\n".to_owned()));
+    let current_value_cloned = current_value_mutex.clone();
+    let mut sent_message_at = Instant::now();
+
+    let _debouncer = task::spawn(async move {
+        let mut previous_value: String = "p 0 0 0 0\n".to_owned();
+
+        let interval_time = Duration::from_millis(5);
+        let interval_time_millis = interval_time.as_millis();
+
+        let mut interval = time::interval(interval_time);
+
+        loop {
+            let elapsed = sent_message_at.elapsed().as_millis();
+
+            if elapsed < interval_time_millis {
+                interval.tick().await;
+            }
+
+            let current_value = current_value_cloned.lock().unwrap().to_string();
+
+            if current_value != previous_value {
+                print!("pushing {}", current_value);
+                previous_value = current_value.to_owned();
+                serial_tx.write_all(current_value.as_bytes()).await.unwrap();
+                sent_message_at = Instant::now();
+            }
+        }
+    });
+
     let bus_serial_tx = bus.clone();
     tokio::spawn(async move {
         let mut read = bus_serial_tx.subscribe();
         let mut active = true;
+
         while let Ok(message) = read.recv().await {
             match message {
                 BusMessage::Update { values } => {
                     if active {
-                        let message = format!(
+                        let mut value = current_value_mutex.lock().unwrap();
+                        *value = format!(
                             "p {} {} {} {}\n",
                             values[0], values[1], values[2], values[3]
                         );
-                        println!("pushing {}", message);
-                        serial_tx.write_all(message.as_bytes()).await.unwrap();
                     }
                 }
                 BusMessage::Start => {
@@ -200,11 +237,9 @@ async fn main() -> Result<()> {
                 }
                 BusMessage::End { .. } => {
                     active = false;
+                    let mut value = current_value_mutex.lock().unwrap();
+                    *value = "p 0 0 0 0\n".to_owned();
                     println!("deactivate bots");
-
-                    let message = "p 0 0 0 0\n";
-                    println!("pushing {}", message);
-                    serial_tx.write_all(message.as_bytes()).await.unwrap();
                 }
             }
         }
