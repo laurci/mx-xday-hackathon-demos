@@ -45,8 +45,14 @@ async fn main() -> Result<()> {
         .build()
         .await?;
 
+    println!("built environment");
+
     let mut consumer = environment.consumer().build(RABBITMQ_QUEUE).await?;
+    println!("built consumer");
+
     let handle = consumer.handle();
+    println!("got handle");
+
     tokio::spawn(async move {
         while let Some(delivery) = consumer.next().await {
             println!("Got message {:?}", delivery);
