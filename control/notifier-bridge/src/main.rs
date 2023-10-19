@@ -5,10 +5,33 @@ use amqprs::{
     BasicProperties, Deliver,
 };
 use anyhow::Result;
+use serde::Deserialize;
 use tokio::sync::Notify;
 
 const ROBOT1_ADDRESS: &str = "erd1qqqqqqqqqqqqqpgqjaqsz988zaxsfrqcych02ww3ep7qqtslmjdqxwetqe";
 const ROBOT2_ADDRESS: &str = "erd1qqqqqqqqqqqqqpgqsq74pwtygz92qc4lmu2fved3ztxkq9dqmjdqmsc352";
+
+#[derive(Deserialize, Clone, Debug)]
+struct ChainEvent {
+    pub address: String,
+    pub identifier: String,
+    pub topics: Vec<String>,
+    pub data: String,
+    #[serde(rename = "txHash")]
+    pub tx_hash: String,
+}
+
+fn try_parse_chain_event_for_address(text: &String, address: &str) -> Option<ChainEvent> {
+    if let Some(start_idx) = text.find(address) {
+        let after_bracket_idx = start_idx + text[start_idx..].find('}').unwrap();
+        let before_bracket_idx = start_idx - "{\"address\":\"".len();
+        let json = &text[before_bracket_idx..after_bracket_idx + 1];
+        if let Ok(data) = serde_json::from_str::<ChainEvent>(json) {
+            return Some(data);
+        }
+    }
+    None
+}
 
 struct Consumer;
 
@@ -23,18 +46,16 @@ impl AsyncConsumer for Consumer {
     ) {
         let content = String::from_utf8(content).unwrap();
 
-        if let Some(start_idx) = content.find(ROBOT1_ADDRESS) {
-            let after_bracket_idx = start_idx + content[start_idx..].find('}').unwrap();
-            let before_bracket_idx = start_idx - "{\"address\":\"".len();
-            let json = &content[before_bracket_idx..after_bracket_idx + 1];
-            println!("robot 1 transaction found: {:?}", json);
+        if let Some(event) = try_parse_chain_event_for_address(&content, ROBOT1_ADDRESS) {
+            if event.identifier == "join" {
+                println!("robot 1 transaction found: {:?}", event);
+            }
         }
 
-        if let Some(start_idx) = content.find(ROBOT2_ADDRESS) {
-            let after_bracket_idx = start_idx + content[start_idx..].find('}').unwrap();
-            let before_bracket_idx = start_idx - "{\"address\":\"".len();
-            let json = &content[before_bracket_idx..after_bracket_idx + 1];
-            println!("robot 2 transaction found: {:?}", json);
+        if let Some(event) = try_parse_chain_event_for_address(&content, ROBOT2_ADDRESS) {
+            if event.identifier == "join" {
+                println!("robot 2 transaction found: {:?}", event);
+            }
         }
 
         let args = BasicAckArguments::new(deliver.delivery_tag(), false);
