@@ -8,8 +8,7 @@ use anyhow::Result;
 use tokio::sync::Notify;
 
 const ROBOT1_ADDRESS: &str = "erd1qqqqqqqqqqqqqpgqjaqsz988zaxsfrqcych02ww3ep7qqtslmjdqxwetqe";
-// const ROBOT1_ADDRESS: &str = "erd1e22refv0l35v58evpaysnvwjnuzn62stanetew0kexfgpqrg9f0s2krnek";
-const ROBOT2_ADDRESS: &str = "erd1vc5769khq85nlh86hplp6esnpfx5dzgwmeh4dsrd09ce8qc4na3q882pk5";
+const ROBOT2_ADDRESS: &str = "erd1qqqqqqqqqqqqqpgqsq74pwtygz92qc4lmu2fved3ztxkq9dqmjdqmsc352";
 
 struct Consumer;
 

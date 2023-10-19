@@ -8,6 +8,9 @@ pub trait RobotContract {
     #[storage_mapper("deposit")]
     fn deposit(&self, player: &ManagedAddress) -> SingleValueMapper<BigUint>;
 
+    #[event("join")]
+    fn join_event(&self, #[indexed] caller: &ManagedAddress);
+
     #[init]
     fn init(&self) {}
 
@@ -19,5 +22,7 @@ pub trait RobotContract {
         let caller = self.blockchain().get_caller();
         self.deposit(&caller)
             .update(|deposit| *deposit += &*payment);
+
+        self.join_event(&caller);
     }
 }
