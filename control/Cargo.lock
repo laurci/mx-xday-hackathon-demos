@@ -48,6 +48,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "amqp_serde"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19659fab053d9b2cd4fa17649609a3241b181fcd14189931ea5c0976502fe381"
+dependencies = [
+ "bytes",
+ "serde",
+]
+
+[[package]]
+name = "amqprs"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00caf95a4364b46a6cf0f8886ed87dec83e09a3ada1440767f3e14b35886541d"
+dependencies = [
+ "amqp_serde",
+ "async-trait",
+ "bytes",
+ "serde",
+ "tokio 1.33.0",
+]
+
+[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -789,9 +812,10 @@ dependencies = [
 name = "notifier-bridge"
 version = "0.1.0"
 dependencies = [
+ "amqprs",
  "anyhow",
  "async-trait",
- "futures",
+ "dotenv",
  "rabbitmq-stream-client",
  "tokio 1.33.0",
 ]

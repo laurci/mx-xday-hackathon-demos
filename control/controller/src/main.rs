@@ -186,8 +186,10 @@ async fn main() -> Result<()> {
             match message {
                 BusMessage::Update { values } => {
                     if active {
-                        let message =
-                            format!("{} {} {} {}\n", values[0], values[1], values[2], values[3]);
+                        let message = format!(
+                            "p {} {} {} {}\n",
+                            values[0], values[1], values[2], values[3]
+                        );
                         println!("pushing {}", message);
                         serial_tx.write_all(message.as_bytes()).await.unwrap();
                     }
@@ -200,7 +202,7 @@ async fn main() -> Result<()> {
                     active = false;
                     println!("deactivate bots");
 
-                    let message = "0 0 0 0\n";
+                    let message = "p 0 0 0 0\n";
                     println!("pushing {}", message);
                     serial_tx.write_all(message.as_bytes()).await.unwrap();
                 }
