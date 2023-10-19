@@ -53,7 +53,11 @@ async fn main() -> Result<()> {
         }
     });
 
+    println!("started consumer");
+
     tokio::time::sleep(Duration::from_secs(10)).await;
+    println!("closing consumer");
+
     handle.close().await?;
 
     Ok(())
