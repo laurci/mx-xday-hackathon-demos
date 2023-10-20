@@ -5,13 +5,17 @@ use amqprs::{
     BasicProperties, Deliver,
 };
 use anyhow::Result;
+use base64::{engine::general_purpose, Engine as _};
+use bech32::ToBase32;
 use serde::Deserialize;
 use tokio::sync::Notify;
+use unit_crossbar_client::Crossbar;
 
 const ROBOT1_ADDRESS: &str = "erd1qqqqqqqqqqqqqpgqjaqsz988zaxsfrqcych02ww3ep7qqtslmjdqxwetqe";
 const ROBOT2_ADDRESS: &str = "erd1qqqqqqqqqqqqqpgqsq74pwtygz92qc4lmu2fved3ztxkq9dqmjdqmsc352";
 
 #[derive(Deserialize, Clone, Debug)]
+#[allow(unused)]
 struct ChainEvent {
     pub address: String,
     pub identifier: String,
@@ -33,7 +37,14 @@ fn try_parse_chain_event_for_address(text: &String, address: &str) -> Option<Cha
     None
 }
 
-struct Consumer;
+fn base64_to_bech32(input: String) -> String {
+    let address = general_purpose::STANDARD.decode(input).unwrap();
+    bech32::encode("erd", address.to_base32(), bech32::Variant::Bech32).unwrap()
+}
+
+struct Consumer {
+    crossbar: Crossbar,
+}
 
 #[async_trait::async_trait]
 impl AsyncConsumer for Consumer {
@@ -48,12 +59,24 @@ impl AsyncConsumer for Consumer {
 
         if let Some(event) = try_parse_chain_event_for_address(&content, ROBOT1_ADDRESS) {
             if event.identifier == "join" {
+                let address = base64_to_bech32(event.topics[1].clone());
+                println!("address = {}", address);
+                let _ = self
+                    .crossbar
+                    .push_text("join".to_owned(), format!("robot1:{}", address))
+                    .await;
                 println!("robot 1 transaction found: {:?}", event);
             }
         }
 
         if let Some(event) = try_parse_chain_event_for_address(&content, ROBOT2_ADDRESS) {
             if event.identifier == "join" {
+                let address = base64_to_bech32(event.topics[1].clone());
+                println!("address = {}", address);
+                let _ = self
+                    .crossbar
+                    .push_text("join".to_owned(), format!("robot2:{}", address))
+                    .await;
                 println!("robot 2 transaction found: {:?}", event);
             }
         }
@@ -76,6 +99,11 @@ async fn main() -> Result<()> {
     let rabbit_password = std::env::var("RABBITMQ_PASSWORD")?;
     let rabbit_queue = std::env::var("RABBITMQ_QUEUE")?;
 
+    let crossbar_endpoint = std::env::var("UNIT_CLI_API_ENDPOINT")?;
+    let crossbar_key = std::env::var("UNIT_CLI_API_KEY")?;
+
+    let crossbar = Crossbar::new(crossbar_endpoint, crossbar_key).await?;
+
     let connection = Connection::open(&OpenConnectionArguments::new(
         &rabbit_host,
         rabbit_port,
@@ -89,7 +117,9 @@ async fn main() -> Result<()> {
         .manual_ack(true)
         .finish();
 
-    channel.basic_consume(Consumer, consume_args).await?;
+    channel
+        .basic_consume(Consumer { crossbar }, consume_args)
+        .await?;
 
     let guard = Notify::new();
     guard.notified().await;
